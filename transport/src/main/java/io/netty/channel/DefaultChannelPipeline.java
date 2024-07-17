@@ -92,7 +92,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         this.channel = ObjectUtil.checkNotNull(channel, "channel");
         succeededFuture = new SucceededChannelFuture(channel, null);
         voidPromise =  new VoidChannelPromise(channel, true);
-
+        // handler双向链表
         tail = new TailContext(this);
         head = new HeadContext(this);
 
@@ -202,6 +202,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
             newCtx = newContext(group, filterName(name, handler), handler);
 
+            // 插入到tail之前
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
@@ -1307,6 +1308,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         HeadContext(DefaultChannelPipeline pipeline) {
             super(pipeline, null, HEAD_NAME, HeadContext.class);
             unsafe = pipeline.channel().unsafe();
+            // headContext.invokeRead()方法中invokeHandler()需要判断handlerState为ADD_COMPLETE
+            // NioEventLoop在执行channel的bind任务前会触发headContext.invokeRead()方法，最终调用channel的doBeginRead来触发修改channel的兴趣集，增加对accept事件的监听
             setAddComplete();
         }
 

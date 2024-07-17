@@ -507,6 +507,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             try {
                 int strategy;
                 try {
+                    // 第一个注册channel的task（AbstractBootstrap#initAndRegister()）添加到taskQueue后，启动该线程，执行selector.selectNow()立即返回0
+                    // 然后执行runAllTasks完成注册，进入到select无限等待，直到bind任务添加到taskQueue后wakeup唤醒select
+                    // 接着执行processSelectedKeys()，selector订阅channel通道accept事件（SelectionKey.OP_ACCEPT），将channel兴趣集从0改为0x001（PollArrayWrapper.POLLIN）
+                    // 之后执行bind任务，完成bind + listen，再次进入到select无限等待
                     strategy = selectStrategy.calculateStrategy(selectNowSupplier, hasTasks());
                     switch (strategy) {
                     case SelectStrategy.CONTINUE:
